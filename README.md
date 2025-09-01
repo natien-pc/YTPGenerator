@@ -1,3 +1,4 @@
+```markdown
 # YTP Generator - Extended Assets (Tkinter + FFmpeg)
 
 This project is an extended scaffold for a "YouTube Poop (YTP)" style generator built in Python with Tkinter and ffmpeg.
