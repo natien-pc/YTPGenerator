@@ -2,7 +2,9 @@
 """
 main.py - Tkinter GUI for extended YTP generator using ffmpeg
 
-Updated to handle early ffmpeg detection errors and show clearer messages.
+Updated: Adds asset folders (images, memes, sounds, overlays_videos, adverts, errors),
+and new effect toggles that can select or randomly pick from those assets.
+Compatible with Python 3.6+ and Windows 8.1 (use system-installed ffmpeg).
 """
 
 import os
@@ -11,10 +13,10 @@ import time
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from ffmpeg_worker import FFmpegWorker, RuntimeError as FFmpegInitError
+from ffmpeg_worker import FFmpegWorker
 from effects import EFFECTS_METADATA
 from assets import gather_assets
-from utils import open_with_default_app, find_executable
+from utils import open_with_default_app
 
 APP_TITLE = "YTP Generator - Extended Assets (Tk GUI + ffmpeg)"
 DEFAULT_PREVIEW_DURATION = 10  # seconds
@@ -81,31 +83,9 @@ class App(tk.Tk):
         }
 
         self.effect_rows = {}
-        self.worker = None
-        self.preview_btn = None
-        self.generate_btn = None
+        self.worker = FFmpegWorker()
 
-        # create UI early (so we can disable buttons if ffmpeg missing)
         self.create_widgets()
-
-        # attempt to initialize ffmpeg worker and handle errors clearly
-        try:
-            self.worker = FFmpegWorker()
-            # good: ffmpeg found; enable buttons if they were disabled
-            if self.preview_btn:
-                self.preview_btn.configure(state="normal")
-            if self.generate_btn:
-                self.generate_btn.configure(state="normal")
-            self.log("ffmpeg detected on PATH.")
-        except Exception as e:
-            # disable operations that require ffmpeg
-            if self.preview_btn:
-                self.preview_btn.configure(state="disabled")
-            if self.generate_btn:
-                self.generate_btn.configure(state="disabled")
-            messagebox.showerror("FFmpeg not found", str(e))
-            self.log("FFmpeg initialization error:", e)
-
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def create_widgets(self):
@@ -171,10 +151,8 @@ class App(tk.Tk):
 
         btn_frame = ttk.Frame(right_panel)
         btn_frame.pack(fill="x", padx=8, pady=8)
-        self.preview_btn = ttk.Button(btn_frame, text="Preview (fast)", command=self.on_preview)
-        self.preview_btn.pack(side="left", padx=4)
-        self.generate_btn = ttk.Button(btn_frame, text="Generate YTP", command=self.on_generate)
-        self.generate_btn.pack(side="left", padx=4)
+        ttk.Button(btn_frame, text="Preview (fast)", command=self.on_preview).pack(side="left", padx=4)
+        ttk.Button(btn_frame, text="Generate YTP", command=self.on_generate).pack(side="left", padx=4)
         ttk.Button(btn_frame, text="Open Output Folder", command=self.open_output_dir).pack(side="left", padx=4)
 
         # log
@@ -261,15 +239,14 @@ class App(tk.Tk):
                 self.log("Preview ready:", out_path)
                 open_with_default_app(out_path)  # open with default app or ffplay
         except Exception as e:
-            # show more detail and suggest manual ffmpeg run
             self.log("Preview failed:", e)
-            messagebox.showerror("Preview failed", "Preview failed: {}\n\nTip: copy the FFmpeg command from the log and run it manually in a command prompt to see ffmpeg's error output.".format(e))
 
     def on_generate(self):
         cfg = self.gather_config()
         if not cfg["src"]:
             messagebox.showwarning("No source", "Please select a source video first.")
             return
+        # generate a unique filename
         base = os.path.splitext(os.path.basename(cfg["src"]))[0]
         out_name = f"{base}_ytp_{int(time.time())}.mp4"
         out_path = os.path.join(cfg["output_dir"], out_name)
@@ -283,7 +260,7 @@ class App(tk.Tk):
             messagebox.showinfo("Done", f"Generated: {out_path}")
         except Exception as e:
             self.log("Generation failed:", e)
-            messagebox.showerror("Error", f"Generation failed: {e}\n\nCheck the log for the FFmpeg command and errors.")
+            messagebox.showerror("Error", f"Generation failed: {e}")
 
     def on_close(self):
         self.destroy()
