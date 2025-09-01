@@ -1,0 +1,16 @@
+- Added support for asset folders:
+  - images
+  - memes
+  - meme_sounds
+  - sounds
+  - overlays_videos
+  - adverts
+  - errors
+- New effects that can consume those assets:
+  - adverts (overlay advert videos)
+  - errors (glitch/error overlays)
+  - images (image montage/injection)
+  - meme_sounds (play short meme audio overlays)
+  - memes (overlay meme images and optionally mix meme sounds)
+  - overlay_videos (overlay short video clips)
+  - sounds (mix sounds into the main audio)
